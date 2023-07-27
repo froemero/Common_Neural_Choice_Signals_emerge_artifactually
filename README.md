@@ -16,3 +16,7 @@ Study 2: in the works
 Study 3 (Pisauro et al, 2017): https://openneuro.org/datasets/ds002734/versions/1.0.2
 
 Study 4 (Froemer, Maier, & Abdel Rahman, 2018): https://osf.io/hdxvb/
+
+Study 5 (Steinemann, O'Connell, & Kelly, 2018)
+
+Study 6 (Boldt, Schiffer, Waszak, & Yeung, 2019)
