@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.27
+# v0.19.29
 
 using Markdown
 using InteractiveUtils
@@ -46,6 +46,13 @@ using UnfoldMakie
 	using CSVFiles
 
 
+# ╔═╡ cf1a7791-82e9-49d1-9a82-1e29a6f881b0
+CairoMakie.activate!(type="svg")
+
+# ╔═╡ 97ec48e1-5327-47c2-8c76-44e132332a52
+	set_theme!(ggthemr(:fresh))
+
+
 # ╔═╡ b857e30a-23d9-468d-94e9-36e46adfedef
 basepath ="/data/export/users/ehinger/2023_romy_boldt/data_clean/"
 #basepath ="/data/export/users/ehinger/2023_romy_steinemann_filtered/data_clean/"
@@ -58,12 +65,10 @@ sublist = [d for d in readdir(basepath) if occursin("_clean.set",d)];
 eeg = PyMNE.io.read_raw_eeglab(joinpath(basepath,sublist[1]))
 
 # ╔═╡ 19661fde-4fb9-4a74-8764-84281a5556eb
-chanIx = findfirst(lowercase.(pyconvert(Vector{String},eeg.ch_names)) .== "cpz")
-
-# ╔═╡ 256b0517-832c-40cb-b8c5-4a4902d7cf5d
-
+chanIx = findfirst(lowercase.(pyconvert(Vector{String},eeg.ch_names)) .== "pz")
 
 # ╔═╡ 9f717275-432f-449e-ae9d-6e3aaa07368c
+		a = matread(joinpath(basepath,sublist[1]))["EEG"]
 
 
 # ╔═╡ 86737e62-e0ab-4ae4-b88d-378003dfb6e6
@@ -88,12 +93,22 @@ begin
 			:latency=>cnv.(a["latency"])[1,:],
 			:rt => cnv.(a["rt"])[1,:],
 			:event => String.(a["code"])[1,:],
+			:trigger => cnv.(a["type"])[1,:],
 			:accuracy => String.(a["accuracy"])[1,:]
 		)
 		
 		events_onesub = events_onesub[.!isnan.(events_onesub.rt),:]
-			events_onesub.rt_split = CategoricalArray(["slower=","faster"][1 .+ (events_onesub.rt .<= median(events_onesub.rt))])
-	
+		
+		events_onesub.rt_split = CategoricalArray(["slower=","faster"][1 .+ (events_onesub.rt .<= median(events_onesub.rt))])
+@show 
+		events_onesub.mean = CategoricalArray(["low","high"][(1 .+(events_onesub.trigger.==21. .|| events_onesub.trigger.==22.))])
+
+		events_onesub.var = CategoricalArray(["low","high"][(1 .+(events_onesub.trigger.==22. .|| events_onesub.trigger.==12.))])
+
+		# replace response with stimulus one
+		events_onesub.mean[2:2:end] = events_onesub.mean[1:2:end]
+		events_onesub.var[2:2:end] = events_onesub.var[1:2:end]
+		
 		sort!(events_onesub,:latency)
 		push!(allEvents,events_onesub)
 				
@@ -106,6 +121,9 @@ end
 
 
 
+# ╔═╡ fa0e3e7b-e8ed-4b3f-b827-64ed27eab082
+allEvents[1]
+
 # ╔═╡ 6b597181-1f50-4b9a-902e-00ee5b79df3d
 sfreq = pyconvert(Float64,eeg.info["sfreq"]) 
 
@@ -116,8 +134,8 @@ function fitModel(events,eeg;epoched=false)
 	#
 	#events = select(events,:rt=> x->.!isnothing.(x)=>:rt)
 	
-	stimForm = @formula(0~1)
-	respForm = @formula(0~1+rt_split)
+	stimForm = @formula(0~1+rt_split)
+	respForm = @formula(0~1+rt_split)#+mean*var)
 	if epoched
 		eeg_epoch,times = Unfold.epoch(eeg,events,(-1,1),sfreq)
 		badIx = abs.(eeg_epoch).>250
@@ -143,7 +161,11 @@ return m
 end
 
 # ╔═╡ 8ed6f580-42ad-41eb-8423-5edb09566f9f
+begin
+	
 dat = DataFrame(:subject=>sublist,:events =>allEvents,:eeg=>allData);
+
+end
 
 # ╔═╡ 4cfb8f3d-681a-4d1e-9b21-6831b51502fd
 m_all = @by(dat,:subject,
@@ -157,8 +179,11 @@ m_all_stack  =stack(m_all,[:epoched,:deconv];variable_name="type",value_name="mo
 
 # ╔═╡ cd5eea1b-3dbe-4e12-b9aa-5c2c54d5fc27
 allEffects = combine(groupby(m_all_stack,[:subject,:type]),
-    :model=>(x->effects(Dict(:rt_split=>["slower=","faster"]),x[1]))=>AsTable);
+    :model=>(x->effects(Dict(:mean=>["low","high"],:var=>["low","high"],:rt_split=>["slower=","faster"]),x[1]))=>AsTable);
 	
+
+# ╔═╡ 5ae66392-0ec4-43dc-89ec-8996dc6de07b
+
 
 # ╔═╡ 2e1b14ab-d73a-40ec-b910-9294b7eb2ce9
 begin
@@ -167,20 +192,29 @@ end
 
 # ╔═╡ 723921a5-4542-4318-88aa-b048cd7ec1b0
 begin
-f = Figure(resolution=(1000,450))
-
-h = data(@by(allEffects,[:type,:rt_split,:time,:basisname],:yhat=mean(:yhat))|>x->@subset(x,:basisname.!=="Stimulus"))*mapping(:time,:yhat,color=:rt_split,col=:type)*visual(Lines)|>x->draw!(f,x)
-xlims!(current_axis(),[-0.6,0.2])
+f = Figure(resolution=(1500,550))
+#|>x->@subset(x,:basisname.!=="Stimulus")
+h = data(@by(allEffects,[:type,:rt_split,:var,:time,:basisname],:yhat=mean(:yhat)))*mapping(:time,:yhat,color=:rt_split,linestyle=:var,col=:type,row=:basisname)*visual(Lines)|>x->draw!(f,x; facet = (; linkxaxes = :none, linkyaxes = :all))
+xlims!(h[2,1].axis,([-0.2,1.0]))
+xlims!(h[2,2].axis,([-0.2,1.0]))
+xlims!(h[1,1].axis,([-1,0.5]))
+xlims!(h[1,2].axis,([-1,0.5]))
+ylims!(current_axis(),[-2,6.5])
+	
 	legend!(f[1,3],h)
 f
 end
+
+# ╔═╡ c0cdcbf3-b229-42ac-a85a-53a08135e6a0
+h[1].axis
 
 # ╔═╡ 6dc5e188-58d1-49f0-aeac-7846daa61ffa
 let
 f = Figure(resolution=(1000,450))
 
 h = data(@by(allEffects,[:type,:rt_split,:time,:basisname],:yhat=mean(:yhat))|>x->@subset(x,:basisname.=="Stimulus"))*mapping(:time,:yhat,color=:rt_split,col=:type)*visual(Lines)|>x->draw!(f,x)
-#xlims!(current_axis(),[-0.6,0.2])
+xlims!(current_axis(),[-0.2,1])
+ylims!(current_axis(),[-2,6.5])
 	legend!(f[1,3],h)
 f
 end
@@ -2443,6 +2477,8 @@ version = "3.5.0+0"
 
 # ╔═╡ Cell order:
 # ╠═951f20a6-3523-11ee-1bfb-41d5ee96d925
+# ╠═cf1a7791-82e9-49d1-9a82-1e29a6f881b0
+# ╠═97ec48e1-5327-47c2-8c76-44e132332a52
 # ╠═5e141880-987e-4608-90e1-ea0d600cb7fb
 # ╠═6fd22810-bd50-4044-8ef4-b4cb84f8112e
 # ╠═5f5aabf5-4e13-4a98-9a00-32fc9110fd1c
@@ -2452,9 +2488,9 @@ version = "3.5.0+0"
 # ╠═043b1061-45cc-47ba-8fc1-acb33e7d95cb
 # ╠═5e30abb0-aad1-456d-be4e-b69516e5a5e4
 # ╠═19661fde-4fb9-4a74-8764-84281a5556eb
-# ╠═256b0517-832c-40cb-b8c5-4a4902d7cf5d
 # ╠═9f717275-432f-449e-ae9d-6e3aaa07368c
 # ╠═86737e62-e0ab-4ae4-b88d-378003dfb6e6
+# ╠═fa0e3e7b-e8ed-4b3f-b827-64ed27eab082
 # ╠═f710674a-e6c1-442a-9e37-26f949578789
 # ╠═6b597181-1f50-4b9a-902e-00ee5b79df3d
 # ╠═8ed6f580-42ad-41eb-8423-5edb09566f9f
@@ -2462,9 +2498,11 @@ version = "3.5.0+0"
 # ╠═86970a4f-75ec-4d77-9364-1e15148a1085
 # ╠═cd05bf83-e785-4074-ab6e-9821e462ccde
 # ╠═cd5eea1b-3dbe-4e12-b9aa-5c2c54d5fc27
+# ╠═5ae66392-0ec4-43dc-89ec-8996dc6de07b
 # ╠═2e1b14ab-d73a-40ec-b910-9294b7eb2ce9
 # ╠═85712754-940e-4902-b71d-8ee9f6cd728b
 # ╠═723921a5-4542-4318-88aa-b048cd7ec1b0
+# ╠═c0cdcbf3-b229-42ac-a85a-53a08135e6a0
 # ╠═6dc5e188-58d1-49f0-aeac-7846daa61ffa
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

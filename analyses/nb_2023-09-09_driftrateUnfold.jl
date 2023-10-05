@@ -14,6 +14,9 @@ macro bind(def, element)
     end
 end
 
+# ╔═╡ 92198bf3-212d-47d8-817d-76472474c117
+using MakieThemes
+
 # ╔═╡ 4d55f48b-899d-4d11-9681-7ff536fc1774
 begin 
 	using CairoMakie # plotting backend
@@ -29,6 +32,38 @@ end
 
 # ╔═╡ 2c910d6b-bf06-4d0a-8c4d-b0b3a60646a6
 using AlgebraOfGraphics
+
+# ╔═╡ 1879b6fb-9899-49fa-a540-b1145dbb6ba4
+Makie.set_theme!(ggthemr(:fresh))
+
+# ╔═╡ a869a8cf-97be-4683-b86e-8860bca52417
+let
+f,ax,s = series(cpp1[ch.==1,:],solid_color=RGBAf(0,0,0,0.1))
+	lines!(ax,cpp1[1,:],color=:teal,linewidth=5)
+	f
+end
+	
+
+# ╔═╡ ad28a678-4fe2-473c-99e9-3f4ff0bf78f0
+
+function	plot_cpp(m,m_erp,Terz,st)
+c1 = effects(Dict(:condition=>["easy","hard"]),m_erp)
+	c1.group .= "erp"
+	#c1.basisname .= SubString.(string.(c1.basisname),8,length.(c1.basisname))
+	c1.basisname .= String.(c1.basisname)
+c2 = effects(Dict(:condition=>["easy","hard"]),m)
+	c2.group .= "deconv"
+	c = vcat(c1,c2)
+
+h = plot_erp(c;mapping=(;color=:condition,col=:basisname=>sorter(["stimulus","response"]),row=:group=>sorter(["erp","deconv"])))
+	vlines!.(h.content[1:4],[0],linestyle=:dash,color=:gray)
+	  Label(current_figure()[1, 1, TopLeft()], "Motor var: $st \n stim var:$Terz",
+        fontsize = 16,
+        font = :bold,
+        padding = (0, 5, 5, 0),
+        halign = :right)
+	current_figure()
+end
 
 # ╔═╡ 1538db8a-b7a0-40fc-87ca-bac885aa2779
 
@@ -119,6 +154,7 @@ end;
 
 # ╔═╡ ada43e19-433f-4493-a9b3-4fce124312ef
 begin
+	function simulate_cpp(seed,Terz,st)
 	rng = MersenneTwister(seed)
 	rt = zeros(N);
 ch = zeros(N);
@@ -200,20 +236,17 @@ startAccT =     timevec[findfirst(evidence .== 1)];
  
 
 end # for
+eeg = cpp1'[:]
+	UnfoldSim.add_noise!(MersenneTwister(seed),PinkNoise(noiselevel=1),eeg)
+		
+		return eeg,rt,ch
+	end
+
 end
 
 
-# ╔═╡ a869a8cf-97be-4683-b86e-8860bca52417
-series(cpp1[ch.==1,:],solid_color=RGBAf(0,0,0,0.1))
-
-# ╔═╡ 8f38b1a6-467d-481b-aa26-faf191bc396d
-begin
-	eeg = cpp1'[:]
-	UnfoldSim.add_noise!(MersenneTwister(seed),PinkNoise(noiselevel=1),eeg)
-end;
-
 # ╔═╡ b1503e99-6e90-4664-8fe8-c0f338e52407
-begin
+	function gen_evts(rt,ch)
 stim_lat = range(1,length=N,step=length(timevec))
 stim_evts = DataFrame(:latency => stim_lat,
 		:event=>:stimulus,
@@ -230,12 +263,16 @@ resp_evts = DataFrame(:latency => stim_lat .+ rt/dt,
 
 	evts = vcat(stim_evts,resp_evts)
 	sort!(evts,:latency)
+
+		return evts
 end
 
-# ╔═╡ 44c04804-db59-44ff-b764-02a762a45a84
+# ╔═╡ 96cddc50-3f92-4470-8136-fea4e8f21a4e
 begin
-eeg_epoch,times_epoch = Unfold.epoch(eeg,evts,[-0.4,.8],500)
-	f = @formula(0 ~ 1+condition)
+	function fit_models(eeg,evts)
+			eeg_epoch,times_epoch = Unfold.epoch(eeg,evts,[-0.4,.8],500)
+
+			f = @formula(0 ~ 1+condition)
 design_overlap = Dict(
 		:stimulus => (f,firbasis(τ=(-0.4,.8),sfreq=fs,name="stimulus")),
 		:response => (f,firbasis(τ=(-0.4,.8),sfreq=fs,name="response")))
@@ -244,34 +281,38 @@ design_erp = Dict(
 		:stimulus => (f,times_epoch),
 		:response => (f,times_epoch))
 
-
-	
-end
-
-# ╔═╡ 96cddc50-3f92-4470-8136-fea4e8f21a4e
-begin
+		
 m = fit(UnfoldModel,design_overlap,evts,eeg);
 m_erp = fit(UnfoldModel,design_erp,evts,eeg_epoch);
+	return m,m_erp
+	end
 end
 
-# ╔═╡ ad28a678-4fe2-473c-99e9-3f4ff0bf78f0
-begin
-c1 = effects(Dict(:condition=>["easy","hard"]),m_erp)
-	c1.group .= "erp"
-	#c1.basisname .= SubString.(string.(c1.basisname),8,length.(c1.basisname))
-	c1.basisname .= String.(c1.basisname)
-c2 = effects(Dict(:condition=>["easy","hard"]),m)
-	c2.group .= "deconv"
-	c = vcat(c1,c2)
+# ╔═╡ 2a26a5a1-80df-410d-92e0-4d6701c4cc33
+let
+	eeg,rt,ch = simulate_cpp(seed,Terz,st)
+	evts = gen_evts(rt,ch)
+	m,m_erp = fit_models(eeg,evts)
+	plot_cpp(m,m_erp,st,Terz)
 
-plot_erp(c;mapping=(;color=:condition,col=:basisname=>sorter(["stimulus","response"]),row=:group=>sorter(["erp","deconv"])))
-	
-	  Label(current_figure()[1, 1, TopLeft()], "Motor var: $st \n stim var:$Terz",
-        fontsize = 16,
-        font = :bold,
-        padding = (0, 5, 5, 0),
-        halign = :right)
-	current_figure()
+end
+
+# ╔═╡ 43c97ab8-471b-4d1a-96f5-9486fc8981b8
+let
+	eeg,rt,ch = simulate_cpp(seed,0.1,0.2)
+	evts = gen_evts(rt,ch)
+	m,m_erp = fit_models(eeg,evts)
+	plot_cpp(m,m_erp,0.1,0.2)
+
+end
+
+# ╔═╡ 4f5b737e-7eaa-45d6-82d2-abb0755b459e
+let
+	eeg,rt,ch = simulate_cpp(seed,0.2,0.10)
+	evts = gen_evts(rt,ch)
+	m,m_erp = fit_models(eeg,evts)
+	plot_cpp(m,m_erp,0.2,0.10)
+
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -281,6 +322,7 @@ AlgebraOfGraphics = "cbdf2221-f076-402e-a563-3d30da359d67"
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+MakieThemes = "e296ed71-da82-5faf-88ab-0034a9761098"
 PlutoExtras = "ed5d0301-4775-4676-b788-cf71e66ff8ed"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
@@ -293,6 +335,7 @@ AlgebraOfGraphics = "~0.6.16"
 CairoMakie = "~0.10.8"
 DSP = "~0.7.8"
 DataFrames = "~1.6.1"
+MakieThemes = "~0.1.0"
 PlutoExtras = "~0.7.9"
 PlutoUI = "~0.7.52"
 Unfold = "~0.6.0"
@@ -306,7 +349,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.2"
 manifest_format = "2.0"
-project_hash = "647571016b230cb19aa091bc0dabddc2f7b7b39a"
+project_hash = "59471e864c45263767dde840cc9f95af47056c98"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -1375,6 +1418,12 @@ git-tree-sha1 = "f56b09c8b964919373d61750c6d8d4d2c602a2be"
 uuid = "20f20a25-4f0e-4fdf-b5d1-57303727442b"
 version = "0.6.5"
 
+[[deps.MakieThemes]]
+deps = ["Colors", "Makie", "Random"]
+git-tree-sha1 = "22f0ac33ecb2827e21919c086a74a6a9dc7932a1"
+uuid = "e296ed71-da82-5faf-88ab-0034a9761098"
+version = "0.1.0"
+
 [[deps.MappedArrays]]
 git-tree-sha1 = "2dab0221fe2b0f2cb6754eaa743cc266339f527e"
 uuid = "dbb5928d-eab1-5f90-85c2-b9b0edb7c900"
@@ -2412,8 +2461,13 @@ version = "3.5.0+0"
 """
 
 # ╔═╡ Cell order:
+# ╠═92198bf3-212d-47d8-817d-76472474c117
+# ╠═1879b6fb-9899-49fa-a540-b1145dbb6ba4
 # ╠═a869a8cf-97be-4683-b86e-8860bca52417
 # ╠═ad28a678-4fe2-473c-99e9-3f4ff0bf78f0
+# ╠═2a26a5a1-80df-410d-92e0-4d6701c4cc33
+# ╠═43c97ab8-471b-4d1a-96f5-9486fc8981b8
+# ╠═4f5b737e-7eaa-45d6-82d2-abb0755b459e
 # ╠═4d55f48b-899d-4d11-9681-7ff536fc1774
 # ╠═1538db8a-b7a0-40fc-87ca-bac885aa2779
 # ╠═04eda9b6-2107-4da0-9334-b9b08f998f32
@@ -2425,9 +2479,7 @@ version = "3.5.0+0"
 # ╠═93646bde-74be-4cb4-9119-ef964373bedd
 # ╠═bef81da5-1c5d-4b7e-bc3d-2ddebb9ac0d1
 # ╠═ada43e19-433f-4493-a9b3-4fce124312ef
-# ╠═8f38b1a6-467d-481b-aa26-faf191bc396d
 # ╠═b1503e99-6e90-4664-8fe8-c0f338e52407
-# ╠═44c04804-db59-44ff-b764-02a762a45a84
 # ╠═96cddc50-3f92-4470-8136-fea4e8f21a4e
 # ╠═2c910d6b-bf06-4d0a-8c4d-b0b3a60646a6
 # ╟─00000000-0000-0000-0000-000000000001
