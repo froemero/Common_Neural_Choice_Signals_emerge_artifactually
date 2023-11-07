@@ -46,6 +46,9 @@ using UnfoldMakie
 	using CSVFiles
 
 
+# ╔═╡ c0cdcbf3-b229-42ac-a85a-53a08135e6a0
+using Dates
+
 # ╔═╡ cf1a7791-82e9-49d1-9a82-1e29a6f881b0
 CairoMakie.activate!(type="svg")
 
@@ -54,8 +57,11 @@ CairoMakie.activate!(type="svg")
 
 
 # ╔═╡ b857e30a-23d9-468d-94e9-36e46adfedef
-basepath ="/data/export/users/ehinger/2023_romy_boldt/data_clean/"
-#basepath ="/data/export/users/ehinger/2023_romy_steinemann_filtered/data_clean/"
+#basepath ="/data/export/users/ehinger/2023_romy_boldt/data_clean/"
+basepath ="/data/export/users/ehinger/2023_romy_steinemann_filtered/data_clean/"
+
+# ╔═╡ 51199142-73c8-4f8c-bb38-f4fdff211c5c
+
 
 # ╔═╡ 043b1061-45cc-47ba-8fc1-acb33e7d95cb
 sublist = [d for d in readdir(basepath) if occursin("_clean.set",d)];
@@ -199,14 +205,12 @@ xlims!(h[2,1].axis,([-0.2,1.0]))
 xlims!(h[2,2].axis,([-0.2,1.0]))
 xlims!(h[1,1].axis,([-1,0.5]))
 xlims!(h[1,2].axis,([-1,0.5]))
-ylims!(current_axis(),[-2,6.5])
-	
+ylims!(current_axis(),[-5,10.5])
+	save(join(Dates.yearmonthday(now()),"-")*"_"*split(basepath,"/")[end-2]*"rtsplit-both"*".csv",allEffects)
+
 	legend!(f[1,3],h)
 f
 end
-
-# ╔═╡ c0cdcbf3-b229-42ac-a85a-53a08135e6a0
-h[1].axis
 
 # ╔═╡ 6dc5e188-58d1-49f0-aeac-7846daa61ffa
 let
@@ -229,6 +233,7 @@ CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 CategoricalArrays = "324d7699-5711-5eae-9e2f-1d82baa6b597"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DataFramesMeta = "1313f7d8-7da2-5740-9ea0-a2ca25f37964"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
 Glob = "c27321d9-0574-5035-807b-f59d2c89b15c"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
@@ -266,7 +271,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.2"
 manifest_format = "2.0"
-project_hash = "80fc27041ac1e9c26f9090f0df88780710f57e7f"
+project_hash = "c057051c8a27c5f9e749b8a83e13a9af5671e36f"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -2485,6 +2490,7 @@ version = "3.5.0+0"
 # ╠═1178c5bb-9f5a-476e-90db-d257afc33478
 # ╠═72c52de9-d926-4780-97ad-d8ae52f3ad37
 # ╠═b857e30a-23d9-468d-94e9-36e46adfedef
+# ╠═51199142-73c8-4f8c-bb38-f4fdff211c5c
 # ╠═043b1061-45cc-47ba-8fc1-acb33e7d95cb
 # ╠═5e30abb0-aad1-456d-be4e-b69516e5a5e4
 # ╠═19661fde-4fb9-4a74-8764-84281a5556eb
