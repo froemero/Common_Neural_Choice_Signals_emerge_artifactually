@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.29
+# v0.19.32
 
 using Markdown
 using InteractiveUtils
@@ -57,8 +57,8 @@ CairoMakie.activate!(type="svg")
 
 
 # ╔═╡ b857e30a-23d9-468d-94e9-36e46adfedef
-#basepath ="/data/export/users/ehinger/2023_romy_boldt/data_clean/"
-basepath ="/data/export/users/ehinger/2023_romy_steinemann_filtered/data_clean/"
+basepath ="/data/export/users/ehinger/2023_romy_boldt/data_clean/"
+#basepath ="/data/export/users/ehinger/2023_romy_steinemann_filtered/data_clean/"
 
 # ╔═╡ 51199142-73c8-4f8c-bb38-f4fdff211c5c
 
@@ -185,22 +185,14 @@ m_all_stack  =stack(m_all,[:epoched,:deconv];variable_name="type",value_name="mo
 
 # ╔═╡ cd5eea1b-3dbe-4e12-b9aa-5c2c54d5fc27
 allEffects = combine(groupby(m_all_stack,[:subject,:type]),
-    :model=>(x->effects(Dict(:mean=>["low","high"],:var=>["low","high"],:rt_split=>["slower=","faster"]),x[1]))=>AsTable);
+    :model=>(x->effects(Dict(:rt_split=>["slower=","faster"]),x[1]))=>AsTable);
 	
-
-# ╔═╡ 5ae66392-0ec4-43dc-89ec-8996dc6de07b
-
-
-# ╔═╡ 2e1b14ab-d73a-40ec-b910-9294b7eb2ce9
-begin
-	save(joinpath(basepath,"$(split(basepath,'/')[end-2])_-$(pyconvert(Vector{String},eeg.ch_names)[chanIx]).csv"),allEffects)
-end
 
 # ╔═╡ 723921a5-4542-4318-88aa-b048cd7ec1b0
 begin
 f = Figure(resolution=(1500,550))
 #|>x->@subset(x,:basisname.!=="Stimulus")
-h = data(@by(allEffects,[:type,:rt_split,:var,:time,:basisname],:yhat=mean(:yhat)))*mapping(:time,:yhat,color=:rt_split,linestyle=:var,col=:type,row=:basisname)*visual(Lines)|>x->draw!(f,x; facet = (; linkxaxes = :none, linkyaxes = :all))
+h = data(@by(allEffects,[:type,:rt_split,:time,:basisname],:yhat=mean(:yhat)))*mapping(:time,:yhat,color=:rt_split,col=:type,row=:basisname)*visual(Lines)|>x->draw!(f,x; facet = (; linkxaxes = :none, linkyaxes = :all))
 xlims!(h[2,1].axis,([-0.2,1.0]))
 xlims!(h[2,2].axis,([-0.2,1.0]))
 xlims!(h[1,1].axis,([-1,0.5]))
@@ -2504,8 +2496,6 @@ version = "3.5.0+0"
 # ╠═86970a4f-75ec-4d77-9364-1e15148a1085
 # ╠═cd05bf83-e785-4074-ab6e-9821e462ccde
 # ╠═cd5eea1b-3dbe-4e12-b9aa-5c2c54d5fc27
-# ╠═5ae66392-0ec4-43dc-89ec-8996dc6de07b
-# ╠═2e1b14ab-d73a-40ec-b910-9294b7eb2ce9
 # ╠═85712754-940e-4902-b71d-8ee9f6cd728b
 # ╠═723921a5-4542-4318-88aa-b048cd7ec1b0
 # ╠═c0cdcbf3-b229-42ac-a85a-53a08135e6a0
