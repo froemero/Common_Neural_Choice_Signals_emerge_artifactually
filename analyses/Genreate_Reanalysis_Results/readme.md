@@ -1,4 +1,4 @@
-# Procesdure
+# Procedure
 
 These scripts take in outputs from unfold analyses, perform permutation tests to identify significant clusters, and plot the findings.
 
