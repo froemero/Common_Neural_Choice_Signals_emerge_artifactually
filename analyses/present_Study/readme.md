@@ -7,7 +7,7 @@ R-scripts:
 For study 1 we analyze behavior (Table S1), generate Figure 2B panels and analyze the average response locked EEG activity at Pz -700 - -200 ms as a function of RT and value difference.
 
 
-For study 2 we analyze the average response locked EEG activity at Pz -700 - -200 ms as a function of RT and value difference and replicate the findings in study 1.
+For study 2 we analyze the average response locked EEG activity at Pz -700 - -200 ms as a function of RT and value difference and replicate the findings in study 1 (files are includeded in this folder).
 
 
 For EEG analyses:
