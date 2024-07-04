@@ -11,7 +11,7 @@ under construction
 
 Study 1: in the works
 
-Study 2: in the works (this is unpublished data and will be made available upon primary publication)
+Study 2: data files for the replication results are included with the scripts for the current study. 
 
 Study 3 (Pisauro et al, 2017): https://openneuro.org/datasets/ds002734/versions/1.0.2
 
