@@ -1,7 +1,14 @@
 # Main analyses
 
+The main analysis scripts can be found in the present_study folder.
+
 
 # Reanalyses CPP datasets
 
 1) analyze: s- & r-locked data, where r has rt-median split
 2) export betas for visualization (Pz)
+
+scripts live on the top folder level and exports are in the respective folders for reanalyses. 
+
+
+Note that Froemer, Maier and Abdel Rahman 2018 was reanalyzed in Matlab. All these scripts are in the Folder Froemer2018.
