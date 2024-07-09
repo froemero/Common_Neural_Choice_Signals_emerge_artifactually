@@ -20,8 +20,11 @@ We preprocess the data (Study 1 and 2) and then submit to 1 of 2 analysis pipeli
 2) Epoching
 3) massStats
 4) getResMass
-5) Export (for component analyses in R)
+5) export (for component analyses in R)
 
 ## 2) MASS-univariate and deconvolution analyses in Matlab using unfold for matlab
 
-
+takes preprocessed files:
+1) unfold deconvolution: BASB_unfold.m (Study 1), BASS_unfold.m (Study 2)
+2) Permutation tests: Permutation_test_on_ufresults.m (Study 1), Permutation_test_on_ufresults_BASS.m (Study 2)
+3) Extract results: GetResMASS_uf.m (Study1), GetResMASS_uf_BASS.m (Study 2)
