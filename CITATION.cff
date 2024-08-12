@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Froemer"
+  given-names: "Romy"
+  orcid: "https://orcid.org/0000-0002-9468-4014"
+- family-names: "Nassar"
+  given-names: "Matthew"
+  orcid: "https://orcid.org/0000-0002-5397-535X"
+- family-names: "Ehinger"
+  given-names: "Benedikt"
+  orcid: "https://orcid.org/0000-0002-6276-3332"
+- family-names: "Shenhav"
+  given-names: "Amitai"
+  orcid: "https://orcid.org/0000-0002-0222-0774"
+title: "Common_Neural_Choice_Signals_emerge_artifactually"
+version: 1.0.0
+doi: 10.17605/OSF.IO/B24DV
+date-released: 2024-08-12
+url: "https://github.com/froemero/Common_Neural_Choice_Signals_emerge_artifactually"
