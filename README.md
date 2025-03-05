@@ -9,7 +9,7 @@ under construction
 
 **Data Repositories**
 
-Study 1: in the works
+Study 1: https://osf.io/b24dv/
 
 Study 2: data files for the replication results are included with the scripts for the current study. 
 
